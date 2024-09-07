@@ -1,13 +1,39 @@
 from django.shortcuts import render, redirect
 from reservation.models import *
-from django.http import HttpResponse
+from django.db.models import Q
+from django.views.generic import CreateView, ListView
+from django.urls import reverse_lazy
+from django.contrib.auth.models import User
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.views import LoginView, LogoutView
+from django.core.exceptions import PermissionDenied
+from django.contrib.auth.forms import UserCreationForm
+from reservation.forms import FilterForm
+from django.contrib.auth import login
 
 
-def rooms_list(request):
-    rooms = Room.objects.all()
-    context = {'rooms':rooms}
+class RoomsList(ListView):
+    model = Room
+    context_object_name = 'rooms'
+    template_name = 'reservation/rooms_list.html'
+    
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        filter_order = self.request.GET.get('filter', 'increase')  # Получаем значение фильтра из GET-параметров
 
-    return render(request=request, template_name = 'reservation/rooms_list.html', context=context)
+        if filter_order == 'increase':
+            queryset = Room.objects.all().order_by('number')
+        elif filter_order == 'decrease':
+            queryset = Room.objects.all().order_by('-number')
+        else:
+            queryset = Room.objects.all()
+        
+        return queryset
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['form'] = FilterForm(self.request.GET)
+        return context
 
 def booking_details(request, pk):
     booking = Booking.objects.get(id=pk)
@@ -21,21 +47,59 @@ def room_details(request, pk):
 
 def book_room(request):
     if request.method == 'POST':
-        room_number = request.POST.get("room-number")
-        start_time = request.POST.get("start-time")
-        end_time = request.POST.get("end-time")
+        room = request.POST.get('room-number')
+        start_time_str = str(request.POST.get('start-time'))  # В формате 'YYYY-MM-DDTHH:MM'
+        end_time_str = str(request.POST.get('end-time'))  # В формате 'YYYY-MM-DDTHH:MM'
+
+        # Преобразование строк в объекты datetime
+
+        start_time = start_time_str.replace('T', ' ')
+        end_time = end_time_str.replace('T', ' ')
 
         try:
-            room = Room.objects.get(number=room_number)
-        except ValueError:
-            return HttpResponse('Wrong room number', status=400)
+            room = Room.objects.get(number=room)
         except Room.DoesNotExist:
-            return HttpResponse('Room does not exist', status=404)
-        
-        booking = Booking.objects.create(user=request.user, room=room, start_time=start_time, end_time=end_time)
+            return render(request, 'reservation/booking_form.html', {'message': 'Цієї кімнати не існує'})
+        except ValueError:
+            return render(request, 'reservation/booking_form.html', {'message': "Неправильний номер кімнати"})
 
-        return redirect("booking-details", pk=booking.id)
+        # Проверка на пересекающиеся бронирования
+        bookings = Booking.objects.filter(
+            Q(start_time__lt=end_time) & Q(end_time__gt=start_time),
+            room=room,
+        )
+
+        if bookings.exists():
+            return render(request, 'reservation/booking_form.html', {'message': 'Кімната вже заброньована на цей час'})
+
+        # Создание бронирования
+        booking = Booking.objects.create(
+            user=request.user,
+            room=room,
+            start_time=start_time,
+            end_time=end_time
+        )
+
+        return redirect('booking-details', pk=booking.id)
 
 
     else:
         return render(request, "reservation/booking_form.html")
+    
+
+class CustomLoginView(LoginView):
+    template_name = "reservation/login.html"
+    redirect_authenticated_user = True
+    success_url = reverse_lazy("reservation:home")
+
+class CustomLogoutView(LogoutView):
+    next_page = "reservation:login"
+
+class RegisterView(CreateView):
+    template_name = "reservation/register.html"
+    form_class = UserCreationForm
+
+    def form_valid(self, form):
+        user = form.save()
+        login(self.request, user)
+        return redirect(reverse_lazy("reservation:login"))

@@ -1,7 +1,13 @@
 {% extends "base.html" %}
 {% block content %}
-<h1>Booking: {{ booking.id }}</h1>
-<p>User name: {{ booking.user.username }}</p>
-<p>Room number: {{ booking.room }}</p>
-<p>Time range: {{ booking.start_time}} - {{booking.end_time}}</p>
+<div style="margin-left:15px">
+    <h2>Бронювання: {{ booking.id }}</h2>
+    <p>Користувач: {{ booking.user.username }}</p>
+    <p>Номер кімнати: №{{ booking.room }}</p>
+    <p>З {{ booking.start_time}} по {{booking.end_time}}</p>
+</div>
+<form action="{% url 'reservation:home' %}" method="get" class="mb-2">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-primary" style="margin-top: 15px;">Повернутися</button>
+</form>
 {% endblock %}

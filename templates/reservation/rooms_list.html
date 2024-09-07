@@ -1,11 +1,22 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="container">
-    <h2>Rooms:</h2>
+<div class="container" style="margin-left: 15px">
+    <form method="get" style="margin-left: 15px;">
+        {{ form.filter.label_tag }} {{ form.filter }}   
+        <button type="submit">Фільтрувати</button>
+    </form>
+    <h3>Кімнати:</h3>
     <div class="list-group">
         {% for room in rooms %}
-        <p>{{ room.number }}</p>
+        <ul>
+            <li><a href="{% url 'reservation:room-detail' room.id %}">{{ room.number }}</a></li>
+        </ul>
         {% endfor %}
     </div>
 </div>
+<form method="GET" action='{% url "reservation:book-room" %}'>
+    <button type="submit" class="btn btn-secondary" style="margin-left: 15px;">
+        Забронювати кімнату
+    </button>
+</form>
 {% endblock %}

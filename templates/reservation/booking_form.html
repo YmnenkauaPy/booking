@@ -1,20 +1,55 @@
 {% extends "base.html" %}
 {% block content %}
-    <form method="POST" action="{% url 'book-room' %}">
-    {% csrf_token %}
+    <form method="POST" action='{% url "reservation:book-room" %}' enctype="multipart/form-data" style="margin-left: 15px" autocomplete="off">
+        {% csrf_token %}
         <div>
-            <label for="room-number">Room number:</label>
+            <label for="room-number">Номер кімнати:</label>
             <input type="text" id="room-number" name="room-number">
         </div>
         <div>
-            <label for="start-time">Start time:</label>
+            <label for="start-time">З котрого:</label>
             <input type="datetime-local" id="start-time" name="start-time">
         </div>
         <div>
-            <label for="end-time">End time:</label>
+            <label for="end-time">По котре:</label>
             <input type="datetime-local" id="end-time" name="end-time">
         </div>
 
-        <button type="submit">Book this room</button>
+        <p id="message" style="color: red;">{{ message }}</p>
+
+        <button id = "submit" type="submit">Забронювати цю кімнату</button>
     </form>
+    <form action="{% url 'reservation:home' %}" method="get" class="mb-2" style="margin-left:15px">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-primary" style="margin-top: 15px;">Повернутися</button>
+    </form>
+
+    <script>
+        document.getElementById('start-time').addEventListener('input', checkAvailability);
+        document.getElementById('end-time').addEventListener('input', checkAvailability);
+
+        function checkAvailability(event) {
+            const roomNumber = document.getElementById('room-number').value;
+            const startTime = document.getElementById('start-time').value;
+            const endTime = document.getElementById('end-time').value;
+
+            if (roomNumber && startTime && endTime) {
+                const formData = new FormData();
+                formData.append('room_number', roomNumber);
+                formData.append('start_time', startTime);
+                formData.append('end_time', endTime);
+
+                fetch("{% url 'reservation:book-room' %}", {
+                    method: "POST",
+                    headers: {
+                        "X-CSRFToken": "{{ csrf_token }}"
+                    },
+                    body: formData
+                })
+            }
+        }
+
+
+    
+    </script>
 {% endblock %}
