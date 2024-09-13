@@ -3,10 +3,7 @@ from reservation.models import *
 from django.db.models import Q
 from django.views.generic import CreateView, ListView
 from django.urls import reverse_lazy
-from django.contrib.auth.models import User
-from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.views import LoginView, LogoutView
-from django.core.exceptions import PermissionDenied
 from django.contrib.auth.forms import UserCreationForm
 from reservation.forms import FilterForm
 from django.contrib.auth import login
@@ -46,12 +43,13 @@ def room_details(request, pk):
     return render(request, "reservation/room_details.html", context={"room":room})
 
 def book_room(request):
+    if not request.user.is_authenticated:
+        return redirect('reservation:login')
     if request.method == 'POST':
         room = request.POST.get('room-number')
-        start_time_str = str(request.POST.get('start-time'))  # В формате 'YYYY-MM-DDTHH:MM'
-        end_time_str = str(request.POST.get('end-time'))  # В формате 'YYYY-MM-DDTHH:MM'
+        start_time_str = str(request.POST.get('start-time')) 
+        end_time_str = str(request.POST.get('end-time'))  
 
-        # Преобразование строк в объекты datetime
 
         start_time = start_time_str.replace('T', ' ')
         end_time = end_time_str.replace('T', ' ')
@@ -63,7 +61,6 @@ def book_room(request):
         except ValueError:
             return render(request, 'reservation/booking_form.html', {'message': "Неправильний номер кімнати"})
 
-        # Проверка на пересекающиеся бронирования
         bookings = Booking.objects.filter(
             Q(start_time__lt=end_time) & Q(end_time__gt=start_time),
             room=room,
@@ -72,7 +69,6 @@ def book_room(request):
         if bookings.exists():
             return render(request, 'reservation/booking_form.html', {'message': 'Кімната вже заброньована на цей час'})
 
-        # Создание бронирования
         booking = Booking.objects.create(
             user=request.user,
             room=room,
@@ -80,7 +76,7 @@ def book_room(request):
             end_time=end_time
         )
 
-        return redirect('booking-details', pk=booking.id)
+        return redirect('reservation:booking-details', pk=booking.id)
 
 
     else:

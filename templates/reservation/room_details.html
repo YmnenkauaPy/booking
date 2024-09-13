@@ -3,7 +3,7 @@
 
 <div class="container mt-3" style="margin-left: 15px;">
     <h3>№{{ room.number }}</h3>
-    <p>{{ room.description }}</p>
+    <p style="border: 1px solid black; padding:5px; width: fit-content;">{{ room.description }}</p>
     <p>Локація: <span class="badge badge-primary">{{ room.location }}</span></p>
     <p>Кількість місць: <span class="badge badge-secondary">{{ room.capacity }}</span></p>
     <form action="{% url 'reservation:home' %}" method="get" class="mb-2">
