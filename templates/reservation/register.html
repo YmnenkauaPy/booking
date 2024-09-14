@@ -1,10 +1,14 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<h2>Register</h2>
-<form method="post">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit">Зареєструватись</button>
-</form>
+<div style="border: 1px solid black; padding: 10px 50px; position: absolute; top: 50%; left: 50%; 
+text-align: center; transform: translate(-50%, -50%);">
+    <h2 style="margin: 0;">Реєстрація</h2>
+    <br><br><br><br>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">Реєстрація</button>
+    </form>
+</div>
 {% endblock %}
